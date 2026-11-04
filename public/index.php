@@ -22,8 +22,8 @@
             <div>
                 <label class="block text-sm font-medium mb-1" for="type">Formato (Solo para YouTube)</label>
                 <select id="type" name="type" class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:border-indigo-500 text-sm">
-                    <option value="audio">Audio (MP3)</option>
                     <option value="video">Video (MP4)</option>
+                    <option value="audio">Audio (MP3)</option>
                 </select>
             </div>
 

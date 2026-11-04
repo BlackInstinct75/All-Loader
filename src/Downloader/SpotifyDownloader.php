@@ -10,9 +10,9 @@ class SpotifyDownloader
 
     public function __construct()
     {
-        $config = require __DIR__ . '/../../config/spotify.php';
-        $this->clientId = $config['client_id'] ?? '';
-        $this->clientSecret = $config['client_secret'] ?? '';
+        // Cargamos las credenciales directamente desde las variables de entorno (.env)
+        $this->clientId = getenv('SPOTIFY_CLIENT_ID') ?: ($_ENV['SPOTIFY_CLIENT_ID'] ?? '');
+        $this->clientSecret = getenv('SPOTIFY_CLIENT_SECRET') ?: ($_ENV['SPOTIFY_CLIENT_SECRET'] ?? '');
         $this->youtubeDownloader = new YoutubeDownloader();
     }
 
@@ -40,7 +40,8 @@ class SpotifyDownloader
             return ['success' => false, 'file' => null, 'error' => 'No se pudieron obtener los metadatos de la pista de Spotify.'];
         }
 
-        $searchQuery = $trackData['artist'] . ' - ' . $trackData['title'];
+        // Unir artista y título en una sola línea separadas por un espacio
+        $searchQuery = $trackData['artist'] . ' ' . $trackData['title'];
         
         // Construir la consulta de búsqueda optimizada para yt-dlp
         $ytSearchUrl = 'ytsearch1:' . $searchQuery;

@@ -1,2 +1,7 @@
 storage/downloads/*
 !storage/downloads/.gitkeep
+ffmpeg.exe
+ffprobe.exe
+ffplay.exe
+yt-dlp.exe
+.env

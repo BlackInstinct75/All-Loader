@@ -12,36 +12,66 @@ class YoutubeDownloader
     {
         $this->downloadPath = rtrim($downloadPath, '/') . '/';
         
-        // Apuntar directamente a la ruta absoluta del ejecutable de yt-dlp guardado en la raíz del proyecto
-        $this->ytDlpPath = realpath(__DIR__ . '/../../yt-dlp.exe');
-        if (!$this->ytDlpPath) {
-            $this->ytDlpPath = __DIR__ . '/../../yt-dlp.exe';
-        }
-
-        // Definir la ruta donde se encuentran ffmpeg.exe y ffprobe.exe (en la raíz del proyecto)
+        // Rutas absolutas a los ejecutables en la raíz del proyecto
+        $this->ytDlpPath = realpath(__DIR__ . '/../../yt-dlp.exe') ?: (__DIR__ . '/../../yt-dlp.exe');
         $this->ffmpegPath = realpath(__DIR__ . '/../../') ?: (__DIR__ . '/../../');
     }
 
     /**
-     * Descarga contenido de YouTube (Audio o Video)
-     * 
-     * @param string $url URL de YouTube
-     * @param string $type 'audio' o 'video'
-     * @return array ['success' => bool, 'file' => string|null, 'error' => string|null]
+     * Obtiene la información del video de YouTube sin descargarlo
+     */
+    public function getVideoInfo(string $url): ?array
+    {
+        $command = sprintf('%s --dump-json %s', escapeshellcmd($this->ytDlpPath), escapeshellarg($url));
+        
+        $output = [];
+        $resultCode = 0;
+        exec($command, $output, $resultCode);
+
+        if ($resultCode !== 0 || empty($output)) {
+            return null;
+        }
+
+        $info = json_decode(implode("\n", $output), true);
+
+        return [
+            'title' => $info['title'] ?? 'Desconocido',
+            'duration' => $info['duration_string'] ?? '',
+            'thumbnail' => $info['thumbnail'] ?? '',
+            'uploader' => $info['uploader'] ?? ''
+        ];
+    }
+
+    /**
+     * Descarga contenido de YouTube (Audio o Video) con nombres secuenciales
      */
     public function download(string $url, string $type = 'audio'): array
     {
-        // Validación básica de URL para evitar inyecciones en la shell
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             return ['success' => false, 'file' => null, 'error' => 'URL no válida.'];
         }
 
-        // Usamos doble porcentaje (%%) para que Windows no corrompa las variables internas de yt-dlp
-        $outputTemplate = $this->downloadPath . '%%(title)s [%%(id)s].%%(ext)s';
+        // Definir el prefijo según el tipo de descarga
+        $prefix = ($type === 'audio') ? 'Audio_' : 'Video_';
 
-        // Construir el comando incluyendo --ffmpeg-location
+        // Escanear la carpeta de descargas para calcular el siguiente número secuencial
+        $files = glob($this->downloadPath . $prefix . '*');
+        $maxNum = 0;
+        foreach ($files as $file) {
+            $basename = pathinfo($file, PATHINFO_FILENAME);
+            if (preg_match('/^' . $prefix . '(\d+)$/', $basename, $matches)) {
+                $num = (int)$matches[1];
+                if ($num > $maxNum) {
+                    $maxNum = $num;
+                }
+            }
+        }
+        $nextNum = $maxNum + 1;
+
+        // Construir la plantilla de salida con el nombre secuencial (ej. Video_1.mp4, Audio_2.mp3)
+        $outputTemplate = $this->downloadPath . $prefix . $nextNum . '';
+
         if ($type === 'audio') {
-            // Descargar mejor audio, convertir a MP3 usando FFmpeg local y limpiar fragmentos
             $command = sprintf(
                 '%s --ffmpeg-location %s -x --audio-format mp3 --audio-quality 0 -o %s %s',
                 escapeshellcmd($this->ytDlpPath),
@@ -50,7 +80,6 @@ class YoutubeDownloader
                 escapeshellarg($url)
             );
         } else {
-            // Descargar mejor video y audio, fusionarlos en MP4 y limpiar fragmentos
             $command = sprintf(
                 '%s --ffmpeg-location %s -f "bv*+ba/b" --merge-output-format mp4 -o %s %s',
                 escapeshellcmd($this->ytDlpPath),
@@ -60,7 +89,6 @@ class YoutubeDownloader
             );
         }
 
-        // Ejecutar el comando en el sistema
         $output = [];
         $resultCode = 0;
         exec($command . ' 2>&1', $output, $resultCode);
@@ -73,7 +101,6 @@ class YoutubeDownloader
             ];
         }
 
-        // Intentar localizar el archivo descargado recientemente en la carpeta
         return [
             'success' => true,
             'file' => $this->getLatestDownloadedFile(),
@@ -81,9 +108,6 @@ class YoutubeDownloader
         ];
     }
 
-    /**
-     * Devuelve el archivo más reciente en la carpeta de descargas
-     */
     private function getLatestDownloadedFile(): ?string
     {
         $files = glob($this->downloadPath . '*');
@@ -91,13 +115,11 @@ class YoutubeDownloader
             return null;
         }
 
-        // Filtrar archivos temporales o parciales de descarga
         $validFiles = array_filter($files, fn($f) => !str_ends_with($f, '.part') && !str_ends_with($f, '.ytdl'));
         if (empty($validFiles)) {
             $validFiles = $files;
         }
 
-        // Ordenar por fecha de modificación (el más reciente primero)
         usort($validFiles, fn($a, $b) => filemtime($b) - filemtime($a));
 
         return realpath($validFiles[0]);
