@@ -7,7 +7,6 @@ document.getElementById('downloadForm').addEventListener('submit', async functio
     const loading = document.getElementById('loading');
     const resultDiv = document.getElementById('result');
 
-    // Preparar interfaz para carga
     submitBtn.disabled = true;
     loading.classList.remove('hidden');
     resultDiv.classList.add('hidden');
@@ -29,11 +28,17 @@ document.getElementById('downloadForm').addEventListener('submit', async functio
         const data = await response.json();
 
         if (data.success && data.download_url) {
+            // Extraemos el nombre limpio del archivo decodificando la URL
+            const fileName = decodeURIComponent(data.download_url.split('/').pop());
+            
             resultDiv.innerHTML = `
-                <p class="text-green-400 font-medium mb-3">¡Archivo listo para descargar!</p>
-                <a href="${data.download_url}" download class="inline-block bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition duration-200">
-                    📥 Descargar Archivo
-                </a>
+                <div class="space-y-2">
+                    <p class="text-green-400 font-semibold text-lg">✔ ¡Ya está descargado!</p>
+                    <p class="text-sm text-gray-300 bg-gray-800 p-2 rounded border border-gray-700 truncate" title="${fileName}">
+                        📁 <strong>Archivo:</strong> ${fileName}
+                    </p>
+                    <p class="text-xs text-gray-400">El archivo se ha guardado correctamente en el servidor.</p>
+                </div>
             `;
         } else {
             resultDiv.innerHTML = `<p class="text-red-400 font-medium">Error: ${data.error || 'Ocurrió un error desconocido.'}</p>`;
