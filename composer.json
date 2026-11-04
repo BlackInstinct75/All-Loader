@@ -1,0 +1,11 @@
+{
+    "name": "app/yt-spotify-downloader",
+    "description": "Descargador de YouTube y Spotify en PHP",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "require": {}
+}
