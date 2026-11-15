@@ -6,3 +6,4 @@ ffplay.exe
 yt-dlp.exe
 .env
 requirements.7z
+*.7z
