@@ -1,9 +1,10 @@
 FROM php:8.2-apache
 
-# Actualizar el sistema e instalar dependencias necesarias
+# Actualizar el sistema e instalar dependencias necesarias (incluyendo nodejs)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     python3 \
+    nodejs \
     curl \
     git \
     unzip \
