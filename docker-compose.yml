@@ -9,5 +9,3 @@ services:
     volumes:
       - .:/var/www/html
       - /var/www/html/vendor
-    environment:
-      - APACHE_DOCUMENT_ROOT=/var/www/html/public

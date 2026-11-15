@@ -1,53 +1,67 @@
 document.getElementById('downloadForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    const urlInput = document.getElementById('url').value;
-    const typeInput = document.getElementById('type').value;
-    const submitBtn = document.getElementById('submitBtn');
+    const url = document.getElementById('url').value;
+    const type = document.getElementById('type').value;
     const loading = document.getElementById('loading');
     const resultDiv = document.getElementById('result');
+    const submitBtn = document.getElementById('submitBtn');
 
-    submitBtn.disabled = true;
+    // Detectar plataforma automáticamente según la URL
+    const platform = url.includes('spotify.com') ? 'spotify' : 'youtube';
+
+    // UI: Mostrar estado de carga
     loading.classList.remove('hidden');
     resultDiv.classList.add('hidden');
-    resultDiv.innerHTML = '';
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    const formData = new FormData();
+    formData.append('url', url);
+    formData.append('type', type);
+    formData.append('platform', platform);
 
     try {
-        const formData = new URLSearchParams();
-        formData.append('url', urlInput);
-        formData.append('type', typeInput);
-
-        const response = await fetch('download.php', {
+        const response = await fetch('download_handler.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formData.toString()
+            body: formData
         });
 
-        const data = await response.json();
-
-        if (data.success && data.download_url) {
-            // Extraemos el nombre limpio del archivo decodificando la URL
-            const fileName = decodeURIComponent(data.download_url.split('/').pop());
-            
-            resultDiv.innerHTML = `
-                <div class="space-y-2">
-                    <p class="text-green-400 font-semibold text-lg">✔ ¡Ya está descargado!</p>
-                    <p class="text-sm text-gray-300 bg-gray-800 p-2 rounded border border-gray-700 truncate" title="${fileName}">
-                        📁 <strong>Archivo:</strong> ${fileName}
-                    </p>
-                    <p class="text-xs text-gray-400">El archivo se ha guardado correctamente en el servidor.</p>
-                </div>
-            `;
-        } else {
-            resultDiv.innerHTML = `<p class="text-red-400 font-medium">Error: ${data.error || 'Ocurrió un error desconocido.'}</p>`;
+        // Si el servidor devuelve un error en texto plano o JSON en lugar del archivo
+        const contentType = response.headers.get('content-type');
+        if (!response.ok || (contentType && contentType.includes('text/html'))) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Error al procesar el archivo.');
         }
-    } catch (err) {
-        resultDiv.innerHTML = `<p class="text-red-400 font-medium">Error de conexión con el servidor.</p>`;
-    } finally {
-        submitBtn.disabled = false;
-        loading.classList.add('hidden');
+
+        // Extraer el nombre del archivo de las cabeceras HTTP
+        const disposition = response.headers.get('Content-Disposition');
+        let filename = platform === 'spotify' || type === 'audio' ? 'Audio.mp3' : 'Video.mp4';
+        if (disposition && disposition.includes('filename=')) {
+            filename = disposition.split('filename=')[1].replace(/["']/g, '');
+        }
+
+        // Convertir la respuesta binaria en un Blob y forzar la descarga en el navegador
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+
+        // Mostrar confirmación
+        resultDiv.innerHTML = `<p class="text-green-400 font-medium">✅ Descarga completada: <span class="text-gray-300">${filename}</span></p>`;
         resultDiv.classList.remove('hidden');
+
+    } catch (error) {
+        resultDiv.innerHTML = `<p class="text-red-400 text-sm">❌ ${error.message}</p>`;
+        resultDiv.classList.remove('hidden');
+    } finally {
+        loading.classList.add('hidden');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 });
