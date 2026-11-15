@@ -30,13 +30,29 @@ class YoutubeDownloader
     }
 
     /**
+     * Construye los parámetros extra de Node.js y Cookies para evitar bloqueos antibot
+     */
+    private function getExtraFlags(): string
+    {
+        $flags = '--js-runtimes node';
+        $cookiesPath = realpath(__DIR__ . '/../../storage/cookies.txt');
+
+        if ($cookiesPath && file_exists($cookiesPath)) {
+            $flags .= ' --cookies ' . escapeshellarg($cookiesPath);
+        }
+
+        return $flags;
+    }
+
+    /**
      * Obtiene la información del video de YouTube sin descargarlo
      */
     public function getVideoInfo(string $url): ?array
     {
         $command = sprintf(
-            '%s --dump-json %s 2>&1',
+            '%s %s --dump-json %s 2>&1',
             escapeshellcmd($this->ytDlpPath),
+            $this->getExtraFlags(),
             escapeshellarg($url)
         );
 
@@ -69,22 +85,25 @@ class YoutubeDownloader
 
         $prefix = ($type === 'audio') ? 'Audio_' : 'Video_';
         $uniqueId = uniqid();
-        
+        $extraFlags = $this->getExtraFlags();
+
         // Plantilla con %(ext)s para que yt-dlp y ffmpeg gestionen correctamente la extensión
         $outputTemplate = $this->downloadPath . $prefix . $uniqueId . '.%(ext)s';
 
         if ($type === 'audio') {
             $command = sprintf(
-                '%s --ffmpeg-location %s -x --audio-format mp3 --audio-quality 0 -o %s %s 2>&1',
+                '%s %s --ffmpeg-location %s -x --audio-format mp3 --audio-quality 0 -o %s %s 2>&1',
                 escapeshellcmd($this->ytDlpPath),
+                $extraFlags,
                 escapeshellarg($this->ffmpegPath),
                 escapeshellarg($outputTemplate),
                 escapeshellarg($url)
             );
         } else {
             $command = sprintf(
-                '%s --ffmpeg-location %s -f "bv*+ba/b" --merge-output-format mp4 -o %s %s 2>&1',
+                '%s %s --ffmpeg-location %s -f "bv*+ba/b" --merge-output-format mp4 -o %s %s 2>&1',
                 escapeshellcmd($this->ytDlpPath),
+                $extraFlags,
                 escapeshellarg($this->ffmpegPath),
                 escapeshellarg($outputTemplate),
                 escapeshellarg($url)
