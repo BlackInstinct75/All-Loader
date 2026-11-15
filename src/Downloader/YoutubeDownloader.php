@@ -11,10 +11,22 @@ class YoutubeDownloader
     public function __construct(string $downloadPath = __DIR__ . '/../../storage/downloads/')
     {
         $this->downloadPath = rtrim($downloadPath, '/') . '/';
-        
-        // Rutas absolutas a los ejecutables en la raíz del proyecto
-        $this->ytDlpPath = realpath(__DIR__ . '/../../yt-dlp.exe') ?: (__DIR__ . '/../../yt-dlp.exe');
-        $this->ffmpegPath = realpath(__DIR__ . '/../../') ?: (__DIR__ . '/../../');
+
+        // Asegurar que el directorio temporal existe
+        if (!is_dir($this->downloadPath)) {
+            mkdir($this->downloadPath, 0775, true);
+        }
+
+        // Detectar automáticamente si corre en Windows (local) o Linux (Docker)
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $baseDir = realpath(__DIR__ . '/../../') ?: (__DIR__ . '/../../');
+            $this->ytDlpPath = $baseDir . DIRECTORY_SEPARATOR . 'yt-dlp.exe';
+            $this->ffmpegPath = $baseDir;
+        } else {
+            // En Docker (Linux) usa los binarios instalados en el sistema
+            $this->ytDlpPath = 'yt-dlp';
+            $this->ffmpegPath = '/usr/bin';
+        }
     }
 
     /**
@@ -22,8 +34,12 @@ class YoutubeDownloader
      */
     public function getVideoInfo(string $url): ?array
     {
-        $command = sprintf('%s --dump-json %s', escapeshellcmd($this->ytDlpPath), escapeshellarg($url));
-        
+        $command = sprintf(
+            '%s --dump-json %s 2>&1',
+            escapeshellcmd($this->ytDlpPath),
+            escapeshellarg($url)
+        );
+
         $output = [];
         $resultCode = 0;
         exec($command, $output, $resultCode);
@@ -43,7 +59,7 @@ class YoutubeDownloader
     }
 
     /**
-     * Descarga contenido de YouTube (Audio o Video) con nombres secuenciales
+     * Descarga contenido de YouTube (Audio o Video) y devuelve la ruta del archivo listo
      */
     public function download(string $url, string $type = 'audio'): array
     {
@@ -51,29 +67,15 @@ class YoutubeDownloader
             return ['success' => false, 'file' => null, 'error' => 'URL no válida.'];
         }
 
-        // Definir el prefijo según el tipo de descarga
         $prefix = ($type === 'audio') ? 'Audio_' : 'Video_';
-
-        // Escanear la carpeta de descargas para calcular el siguiente número secuencial
-        $files = glob($this->downloadPath . $prefix . '*');
-        $maxNum = 0;
-        foreach ($files as $file) {
-            $basename = pathinfo($file, PATHINFO_FILENAME);
-            if (preg_match('/^' . $prefix . '(\d+)$/', $basename, $matches)) {
-                $num = (int)$matches[1];
-                if ($num > $maxNum) {
-                    $maxNum = $num;
-                }
-            }
-        }
-        $nextNum = $maxNum + 1;
-
-        // Construir la plantilla de salida con el nombre secuencial (ej. Video_1.mp4, Audio_2.mp3)
-        $outputTemplate = $this->downloadPath . $prefix . $nextNum . '';
+        $uniqueId = uniqid();
+        
+        // Plantilla con %(ext)s para que yt-dlp y ffmpeg gestionen correctamente la extensión
+        $outputTemplate = $this->downloadPath . $prefix . $uniqueId . '.%(ext)s';
 
         if ($type === 'audio') {
             $command = sprintf(
-                '%s --ffmpeg-location %s -x --audio-format mp3 --audio-quality 0 -o %s %s',
+                '%s --ffmpeg-location %s -x --audio-format mp3 --audio-quality 0 -o %s %s 2>&1',
                 escapeshellcmd($this->ytDlpPath),
                 escapeshellarg($this->ffmpegPath),
                 escapeshellarg($outputTemplate),
@@ -81,7 +83,7 @@ class YoutubeDownloader
             );
         } else {
             $command = sprintf(
-                '%s --ffmpeg-location %s -f "bv*+ba/b" --merge-output-format mp4 -o %s %s',
+                '%s --ffmpeg-location %s -f "bv*+ba/b" --merge-output-format mp4 -o %s %s 2>&1',
                 escapeshellcmd($this->ytDlpPath),
                 escapeshellarg($this->ffmpegPath),
                 escapeshellarg($outputTemplate),
@@ -91,7 +93,7 @@ class YoutubeDownloader
 
         $output = [];
         $resultCode = 0;
-        exec($command . ' 2>&1', $output, $resultCode);
+        exec($command, $output, $resultCode);
 
         if ($resultCode !== 0) {
             return [
@@ -101,27 +103,22 @@ class YoutubeDownloader
             ];
         }
 
+        // Buscar el archivo generado con ese uniqueId
+        $generatedFiles = glob($this->downloadPath . $prefix . $uniqueId . '.*');
+        $finalFile = !empty($generatedFiles) ? realpath($generatedFiles[0]) : null;
+
+        if (!$finalFile || !file_exists($finalFile)) {
+            return [
+                'success' => false,
+                'file' => null,
+                'error' => 'La descarga finalizó pero no se encontró el archivo resultante.'
+            ];
+        }
+
         return [
             'success' => true,
-            'file' => $this->getLatestDownloadedFile(),
+            'file' => $finalFile,
             'error' => null
         ];
-    }
-
-    private function getLatestDownloadedFile(): ?string
-    {
-        $files = glob($this->downloadPath . '*');
-        if (empty($files)) {
-            return null;
-        }
-
-        $validFiles = array_filter($files, fn($f) => !str_ends_with($f, '.part') && !str_ends_with($f, '.ytdl'));
-        if (empty($validFiles)) {
-            $validFiles = $files;
-        }
-
-        usort($validFiles, fn($a, $b) => filemtime($b) - filemtime($a));
-
-        return realpath($validFiles[0]);
     }
 }
