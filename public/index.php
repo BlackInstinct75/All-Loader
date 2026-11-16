@@ -58,6 +58,11 @@
 
         <!-- Contenedor del resultado -->
         <div id="result" class="hidden mt-6 p-4 rounded-lg bg-gray-950 border border-emerald-900/60 text-center text-sm"></div>
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <a href="/admin.php" style="font-size: 0.7rem; color: #4b5563; text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase;">
+                [ Acceso Admin ]
+            </a>
+        </div>
     </div>
 
     <script src="js/main.js"></script>

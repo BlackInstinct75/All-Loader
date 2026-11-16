@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   app:
     build: .
-    container_name: downlogastder_app
+    container_name: all_loader_app
     ports:
       - "8080:80"
     volumes:
