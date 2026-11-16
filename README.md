@@ -1,4 +1,4 @@
-# Downlogastder
+# All-Loader
 
 Aplicación de escritorio sencilla para descargar vídeos de YouTube usando [yt-dlp](https://github.com/yt-dlp/yt-dlp), con una interfaz gráfica hecha en Tkinter.
 
@@ -78,6 +78,3 @@ El ejecutable resultante se generará en la carpeta `dist/`.
 ## Licencia
 
 Uso personal / educativo.
-
-
-C:\xampp\php\php.exe -S 127.0.0.1:8000 -t public
