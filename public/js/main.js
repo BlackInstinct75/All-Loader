@@ -34,12 +34,11 @@ document.getElementById('downloadForm').addEventListener('submit', async functio
             throw new Error(errorText || 'Error al procesar el archivo.');
         }
 
-        // Definir la estructura de nombres personalizada
-        let filename;
-        if (platform === 'spotify') {
-            filename = 'Musica_Spotify.mp3';
-        } else {
-            filename = type === 'audio' ? 'Musica_Youtube.mp3' : 'Video_Youtube.mp4';
+        // Extraer el nombre del archivo de las cabeceras HTTP
+        const disposition = response.headers.get('Content-Disposition');
+        let filename = platform === 'spotify' || type === 'audio' ? 'Audio.mp3' : 'Video.mp4';
+        if (disposition && disposition.includes('filename=')) {
+            filename = disposition.split('filename=')[1].replace(/["']/g, '');
         }
 
         // Convertir la respuesta binaria en un Blob y forzar la descarga en el navegador
