@@ -29,12 +29,9 @@ class YoutubeDownloader
         }
     }
 
-    /**
-     * Construye los parámetros extra de Node.js y Cookies para evitar bloqueos antibot
-     */
     private function getExtraFlags(): string
     {
-        $flags = '--js-runtimes node';
+        $flags = '--remote-components ejs:github';
         $cookiesPath = realpath(__DIR__ . '/../../storage/cookies.txt');
 
         if ($cookiesPath && file_exists($cookiesPath)) {
