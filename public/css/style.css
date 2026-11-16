@@ -1,0 +1,193 @@
+/* Reset básico y tipografía */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #0b0f0c;
+    color: #d1fae5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    padding: 1rem;
+}
+
+/* Fondo atmosférico estilo Latveria */
+.bg-atmosphere {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(2, 44, 34, 0.25) 0%, rgba(3, 7, 18, 0.85) 55%, #050706 100%);
+    z-index: 0;
+}
+
+/* Contenedor principal (Armadura de Doom) */
+.doom-card {
+    position: relative;
+    z-index: 10;
+    background: linear-gradient(to bottom, #111827, #121814);
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 0 35px rgba(6, 78, 59, 0.35);
+    width: 100%;
+    max-width: 28rem;
+    border: 2px solid rgba(6, 95, 70, 0.6);
+}
+
+/* Cabecera */
+.doom-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.doom-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: #34d399;
+    text-transform: uppercase;
+    background-color: rgba(2, 44, 34, 0.8);
+    border: 1px solid rgba(4, 120, 87, 0.5);
+    border-radius: 9999px;
+    margin-bottom: 0.75rem;
+}
+
+.doom-title {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: linear-gradient(to right, #34d399, #e5e7eb, #059669);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.4));
+}
+
+.doom-subtitle {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+}
+
+/* Formulario */
+.doom-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #34d399;
+    margin-bottom: 0.5rem;
+}
+
+.doom-input,
+.doom-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: #030712;
+    border: 1px solid rgba(6, 95, 70, 0.8);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.doom-input::placeholder {
+    color: #4b5563;
+}
+
+.doom-input:focus,
+.doom-select:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px #10b981;
+}
+
+.doom-select {
+    cursor: pointer;
+}
+
+/* Botón principal */
+.doom-btn {
+    width: 100%;
+    background: linear-gradient(to right, #065f46, #022c22);
+    color: #d1fae5;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(5, 150, 105, 0.5);
+    box-shadow: 0 10px 15px -3px rgba(2, 44, 34, 0.5);
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.doom-btn:hover:not(:disabled) {
+    background: linear-gradient(to right, #047857, #064e3b);
+    border-color: #10b981;
+}
+
+/* Estados dinámicos (usados por main.js) */
+.hidden {
+    display: none !important;
+}
+
+.opacity-50 {
+    opacity: 0.5;
+}
+
+.cursor-not-allowed {
+    cursor: not-allowed;
+}
+
+/* Indicador de carga */
+.doom-loading {
+    margin-top: 1.5rem;
+    text-align: center;
+    color: #34d399;
+}
+
+.doom-loading p {
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Contenedor de resultado y clases para mensajes inyectados por JS */
+.doom-result {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #030712;
+    border: 1px solid rgba(6, 78, 59, 0.6);
+    text-align: center;
+    font-size: 0.875rem;
+    word-break: break-word;
+}
+
+.text-green-400 { color: #4ade80; font-weight: 500; }
+.text-gray-300 { color: #d1d5db; }
+.text-red-400 { color: #f87171; }
